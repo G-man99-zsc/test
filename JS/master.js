@@ -7,7 +7,23 @@ function getAuthUser() {
 function getBackendOrigin() {
     return API_BASE.replace(/\/api\/?$/, "");
 }
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => {
+    const requestUrl = typeof input === "string" ? input : input?.url || "";
+    const isBackendRequest = requestUrl.startsWith(API_BASE) || requestUrl.startsWith(getBackendOrigin());
 
+    if (!isBackendRequest) {
+        return originalFetch(input, init);
+    }
+
+    const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined) || {});
+    headers.set("ngrok-skip-browser-warning", "true");
+
+    return originalFetch(input, {
+        ...init,
+        headers
+    });
+};
 let userChatStateCache = null;
 let userChatStatePromise = null;
 
